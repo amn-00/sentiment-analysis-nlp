@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SentimentIQ — NLP Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #141418;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0ede8;
+    --muted: #7a7875;
+    --accent: #d4a853;
+    --neg: #e24b4a;
+    --neu: #ba7517;
+    --pos: #1d9e75;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    border: 1px solid rgba(212,168,83,0.35);
+    padding: 4px 10px;
+    border-radius: 99px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Card ── */
+  .card {
+    width: 100%;
+    max-width: 680px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  /* ── Textarea ── */
+  .input-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+  textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: rgba(212,168,83,0.4); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* ── Meta row ── */
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Button ── */
+  button {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 13px;
+    background: var(--accent);
+    color: #0c0c0f;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  button:hover { opacity: 0.88; }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Examples ── */
+  .examples {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+  .ex-chip {
+    font-size: 11px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: color 0.2s, border-color 0.2s;
+    background: transparent;
+    width: auto;
+    margin-top: 0;
+  }
+  .ex-chip:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.75rem 0;
+  }
+
+  /* ── Result ── */
+  #result { display: none; }
+  .result-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 1.5rem;
+  }
+  .emoji-big { font-size: 3rem; line-height: 1; }
+  .result-label {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .confidence {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── Bar chart ── */
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+  .bar-name { width: 60px; color: var(--muted); }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+    width: 0%;
+  }
+  .bar-pct { width: 36px; text-align: right; color: var(--muted); font-size: 11px; }
+
+  /* ── Stats ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 1.5rem;
+  }
+  .stat {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-val { font-size: 18px; font-weight: 500; }
+  .stat-key { font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ── History ── */
+  #history-section { display: none; width: 100%; max-width: 680px; margin-top: 1.5rem; }
+  .hist-title { font-size: 10px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .hist-list { display: flex; flex-direction: column; gap: 8px; }
+  .hist-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .hist-text { color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; }
+  .hist-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* ── Loading ── */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(12,12,15,0.3);
+    border-top-color: #0c0c0f;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: -3px;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">NLP · ML Portfolio Project</div>
+  <h1>Sentiment<em>IQ</em></h1>
+  <p class="subtitle">TF-IDF · Logistic Regression · Flask REST API</p>
+</header>
+
+<div class="card">
+  <label class="input-label" for="textInput">Input text</label>
+  <textarea id="textInput" placeholder="Type or paste any text — a review, tweet, feedback, sentence…" maxlength="1000"></textarea>
+  <div class="meta-row">
+    <span id="charCount">0 / 1000 chars</span>
+    <span id="wordCount">0 words</span>
+  </div>
+
+  <button id="analyseBtn" onclick="analyse()">ANALYSE SENTIMENT</button>
+
+  <div class="examples">
+    <span class="ex-chip" onclick="setExample(this)">Loved it!</span>
+    <span class="ex-chip" onclick="setExample(this)">Terrible product, waste of money.</span>
+    <span class="ex-chip" onclick="setExample(this)">It was okay, nothing special.</span>
+    <span class="ex-chip" onclick="setExample(this)">Best experience of my life!</span>
+    <span class="ex-chip" onclick="setExample(this)">Arrived on time, works fine.</span>
+  </div>
+
+  <div id="result">
+    <hr class="divider">
+    <div class="result-top">
+      <span class="emoji-big" id="resEmoji"></span>
+      <div>
+        <div class="result-label" id="resLabel"></div>
+        <div class="confidence" id="resConfidence"></div>
+      </div>
+    </div>
+
+    <div class="bars">
+      <div class="bar-row">
+        <span class="bar-name">Positive</span>
+        <div class="bar-track"><div class="bar-fill" id="barPos" style="background: var(--pos);"></div></div>
+        <span class="bar-pct" id="pctPos"></span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-name">Neutral</span>
+        <div class="bar-track"><div class="bar-fill" id="barNeu" style="background: var(--neu);"></div></div>
+        <span class="bar-pct" id="pctNeu"></span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-name">Negative</span>
+        <div class="bar-track"><div class="bar-fill" id="barNeg" style="background: var(--neg);"></div></div>
+        <span class="bar-pct" id="pctNeg"></span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="statConf"></div><div class="stat-key">Confidence</div></div>
+      <div class="stat"><div class="stat-val" id="statWords"></div><div class="stat-key">Word count</div></div>
+      <div class="stat"><div class="stat-val" id="statLatency"></div><div class="stat-key">Latency</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="history-section">
+  <p class="hist-title">Analysis history</p>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+<footer>Built with Flask · Scikit-Learn · TF-IDF · by Aman Chaudhary</footer>
+
+<script>
+  const textarea = document.getElementById('textInput');
+  const charCount = document.getElementById('charCount');
+  const wordCount = document.getElementById('wordCount');
+
+  textarea.addEventListener('input', () => {
+    const t = textarea.value;
+    charCount.textContent = `${t.length} / 1000 chars`;
+    wordCount.textContent = `${t.trim() ? t.trim().split(/\s+/).length : 0} words`;
+  });
+
+  function setExample(el) {
+    textarea.value = el.textContent;
+    textarea.dispatchEvent(new Event('input'));
+  }
+
+  const BADGE_STYLE = {
+    Positive: 'background:rgba(29,158,117,0.15);color:#1d9e75;border:1px solid rgba(29,158,117,0.3)',
+    Neutral:  'background:rgba(186,117,23,0.15);color:#ba7517;border:1px solid rgba(186,117,23,0.3)',
+    Negative: 'background:rgba(226,75,74,0.15);color:#e24b4a;border:1px solid rgba(226,75,74,0.3)',
+  };
+
+  const history = [];
+
+  async function analyse() {
+    const text = textarea.value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('analyseBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>ANALYSING…';
+
+    try {
+      const res  = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      renderResult(data, text);
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'ANALYSE SENTIMENT';
+    }
+  }
+
+  function renderResult(d, inputText) {
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('resEmoji').textContent  = d.emoji;
+    document.getElementById('resLabel').textContent  = d.label;
+    document.getElementById('resLabel').style.color  = d.color;
+    document.getElementById('resConfidence').textContent = `${d.confidence}% confidence`;
+
+    setTimeout(() => {
+      document.getElementById('barPos').style.width = d.scores.Positive + '%';
+      document.getElementById('barNeu').style.width = d.scores.Neutral  + '%';
+      document.getElementById('barNeg').style.width = d.scores.Negative + '%';
+    }, 50);
+
+    document.getElementById('pctPos').textContent = d.scores.Positive + '%';
+    document.getElementById('pctNeu').textContent = d.scores.Neutral  + '%';
+    document.getElementById('pctNeg').textContent = d.scores.Negative + '%';
+
+    document.getElementById('statConf').textContent    = d.confidence + '%';
+    document.getElementById('statWords').textContent   = d.word_count;
+    document.getElementById('statLatency').textContent = d.latency_ms + 'ms';
+
+    history.unshift({ text: inputText, label: d.label });
+    if (history.length > 5) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const sec  = document.getElementById('history-section');
+    const list = document.getElementById('histList');
+    sec.style.display = 'block';
+    list.innerHTML = history.map(h => `
+      <div class="hist-item">
+        <span class="hist-text">${h.text}</span>
+        <span class="hist-badge" style="${BADGE_STYLE[h.label]}">${h.label}</span>
+      </div>
+    `).join('');
+  }
+
+  textarea.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyse();
+  });
+</script>
+</body>
+</html>
