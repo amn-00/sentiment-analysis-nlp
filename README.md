@@ -1,6 +1,6 @@
 # SentimentIQ — Real-Time NLP Sentiment Analyser
 
-**Portfolio Project | Aman Chaudhary | AI/ML Engineer**
+Aman Chaudhary 
 
 ---
 
