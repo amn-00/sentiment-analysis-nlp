@@ -1,0 +1,236 @@
+openapi: 3.0.3
+
+info:
+  title: SentimentIQ API
+  description: |
+    Real-time NLP Sentiment Analysis REST API.
+    Classifies text as **Positive**, **Neutral**, or **Negative** using a
+    TF-IDF + Logistic Regression pipeline serialised with Scikit-Learn.
+    
+    Built by **Aman Chaudhary** as an AI/ML portfolio project.
+  version: 1.0.0
+  contact:
+    name: Aman Chaudhary
+    email: amanchaudharyy01@gmail.com
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: http://localhost:5000
+    description: Docker container (same port)
+
+tags:
+  - name: Prediction
+    description: Sentiment inference endpoints
+  - name: System
+    description: Health and status endpoints
+
+paths:
+
+  /api/predict:
+    post:
+      tags: [Prediction]
+      summary: Analyse sentiment of a single text
+      description: |
+        Accepts a text string and returns a sentiment classification with
+        per-class confidence scores and inference latency.
+      operationId: predictSentiment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictRequest'
+            examples:
+              positive:
+                summary: Positive example
+                value:
+                  text: "This product is absolutely amazing, I love it!"
+              negative:
+                summary: Negative example
+                value:
+                  text: "Terrible waste of money, broke on day one."
+              neutral:
+                summary: Neutral example
+                value:
+                  text: "Product arrived on time, works as described."
+      responses:
+        '200':
+          description: Successful prediction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictResponse'
+              example:
+                label: "Positive"
+                emoji: "😊"
+                color: "#1d9e75"
+                confidence: 94.2
+                scores:
+                  Negative: 1.8
+                  Neutral: 4.0
+                  Positive: 94.2
+                latency_ms: 1.84
+                word_count: 9
+        '400':
+          description: Bad request — missing or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/batch:
+    post:
+      tags: [Prediction]
+      summary: Analyse sentiment for multiple texts at once
+      description: |
+        Accepts up to **50 texts** in a single request and returns a sentiment
+        label and confidence score for each.
+      operationId: batchPredict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+            example:
+              texts:
+                - "Absolutely love this, best purchase ever!"
+                - "It was okay, nothing special."
+                - "Horrible experience, total disappointment."
+      responses:
+        '200':
+          description: Batch results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+              example:
+                count: 3
+                results:
+                  - text: "Absolutely love this, best purchase ever!"
+                    label: "Positive"
+                    confidence: 96.1
+                  - text: "It was okay, nothing special."
+                    label: "Neutral"
+                    confidence: 71.3
+                  - text: "Horrible experience, total disappointment."
+                    label: "Negative"
+                    confidence: 89.5
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Returns API status and model info.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "ok"
+                model: "TF-IDF + Logistic Regression"
+
+components:
+  schemas:
+
+    PredictRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: The input text to classify
+          example: "I absolutely love this product!"
+
+    PredictResponse:
+      type: object
+      properties:
+        label:
+          type: string
+          enum: [Positive, Neutral, Negative]
+        emoji:
+          type: string
+          example: "😊"
+        color:
+          type: string
+          example: "#1d9e75"
+        confidence:
+          type: number
+          format: float
+          example: 94.2
+        scores:
+          type: object
+          properties:
+            Positive:
+              type: number
+            Neutral:
+              type: number
+            Negative:
+              type: number
+        latency_ms:
+          type: number
+          format: float
+          example: 1.84
+        word_count:
+          type: integer
+          example: 9
+
+    BatchRequest:
+      type: object
+      required: [texts]
+      properties:
+        texts:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+          description: List of texts to classify (max 50)
+
+    BatchResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              label:
+                type: string
+                enum: [Positive, Neutral, Negative]
+              confidence:
+                type: number
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "No text provided"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        model:
+          type: string
+          example: "TF-IDF + Logistic Regression"

@@ -2,74 +2,90 @@
 
 Aman Chaudhary 
 
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![Flask](https://img.shields.io/badge/Flask-3.0-green) ![Docker](https://img.shields.io/badge/Docker-ready-2496ED) ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5-orange)
+
 ---
 
 ## What It Does
-A production-ready web application that classifies any text input as **Positive**, **Neutral**, or **Negative** with confidence scores, using a trained NLP pipeline served via a REST API.
+A production-ready web application that classifies any text as **Positive**, **Neutral**, or **Negative** with confidence scores — served via a Flask REST API, containerised with Docker, and documented with an OpenAPI spec.
 
 ## Tech Stack
 | Layer | Technology |
 |-------|-----------|
 | ML Model | Logistic Regression (Scikit-Learn) |
 | Features | TF-IDF with bigrams, stop-word removal |
-| Backend API | Flask + Flask-CORS |
-| Frontend | Vanilla JS, CSS animations |
-| Serialisation | Pickle |
+| Backend API | Flask REST API |
+| Containerisation | Docker |
+| API Spec | OpenAPI 3.0 (Postman ready) |
+| Testing | Custom benchmark — 500+ inputs, latency profiling |
 
-## Key Features
-- **REST API** with `/api/predict` (single) and `/api/batch` (up to 50 texts) endpoints
-- **Real-time inference** with sub-10ms latency
-- **Auto-trains** model on first run, saves to disk
-- **Analysis history** tracked in-session
-- **Keyboard shortcut** Ctrl+Enter to analyse
-- Clean, dark-themed UI with animated confidence bars
+## Key Results
+- **Sub-2ms** inference latency (P95) across 500+ tested inputs
+- **78% accuracy** on 3-class classification
+- Full end-to-end pipeline: text → TF-IDF → model → JSON response
 
-## How to Run
+---
+
+## Run with Docker (Recommended)
+
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+# 1. Build image
+docker build -t sentimentiq .
 
-# 2. Start the server (model trains automatically on first run)
-python app.py
+# 2. Run container
+docker run -p 5000:5000 sentimentiq
 
 # 3. Open in browser
 http://localhost:5000
 ```
 
+## Run Locally
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+---
+
 ## API Usage
+
 ```bash
 # Single prediction
 curl -X POST http://localhost:5000/api/predict \
   -H "Content-Type: application/json" \
   -d '{"text": "This product is absolutely amazing!"}'
 
-# Response
-{
-  "label": "Positive",
-  "emoji": "😊",
-  "confidence": 94.2,
-  "scores": {"Negative": 1.8, "Neutral": 4.0, "Positive": 94.2},
-  "latency_ms": 3.1,
-  "word_count": 5
-}
+# Batch prediction
+curl -X POST http://localhost:5000/api/batch \
+  -H "Content-Type: application/json" \
+  -d '{"texts": ["Amazing!", "Terrible.", "It was okay."]}'
+
+# Health check
+curl http://localhost:5000/api/health
 ```
 
-## Extending the Project
-- **Swap dataset**: Replace `TRAINING_DATA` in `model/train.py` with any CSV (e.g. IMDB, Twitter Sentiment140)
-- **Upgrade model**: Drop in `RandomForestClassifier` or `SGDClassifier` with no other changes
-- **Deploy**: Wrap in a Docker container, push to AWS EC2 / Heroku
+## Import into Postman
+1. Open Postman → **Import**
+2. Select `openapi.yaml` from this repo
+3. All 3 endpoints load automatically with example payloads
+
+## Run Benchmark (500+ inputs)
+```bash
+# With server running:
+python test_api.py
+```
 
 ---
 
-## Resume Bullet Points (Copy-Paste Ready)
+## Resume Bullet Points
 ```
-• Built a real-time NLP Sentiment Analysis web application using TF-IDF 
-  feature extraction and Logistic Regression, achieving 91%+ test accuracy 
-  across 3-class classification (Positive / Neutral / Negative)
+• Built 3-class NLP Sentiment Analyser using TF-IDF + Logistic Regression;
+  benchmarked against baseline achieving 78% accuracy across 500+ test inputs
 
-• Designed and deployed a Flask REST API with /predict and /batch endpoints, 
-  serving sub-10ms ML inference with serialised Scikit-Learn pipeline
+• Served via Flask REST API (/predict, /batch); serialised Scikit-Learn pipeline
+  at sub-2ms P95 inference latency across 500+ tested inputs
 
-• Implemented end-to-end ML pipeline: text preprocessing → TF-IDF vectorisation 
-  (bigrams, 5000 features) → model training → pickle serialisation → live web UI
+• Containerised full stack with Docker; documented OpenAPI 3.0 spec;
+  tested end-to-end with Postman collection
 ```
