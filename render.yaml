@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sentimentiq
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python model/train.py
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
