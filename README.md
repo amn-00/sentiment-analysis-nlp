@@ -1,43 +1,55 @@
 # SentimentIQ — Real-Time NLP Sentiment Analyser
 
-Aman Chaudhary 
+**Aman Chaudhary**
 
-![Python](https://img.shields.io/badge/Python-3.11-blue) ![Flask](https://img.shields.io/badge/Flask-3.0-green) ![Docker](https://img.shields.io/badge/Docker-ready-2496ED) ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5-orange)
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![Flask](https://img.shields.io/badge/Flask-3.0-green) ![Docker](https://img.shields.io/badge/Docker-ready-2496ED) ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5-orange) ![HuggingFace](https://img.shields.io/badge/🤗-Transformers-yellow)
 
 **🔗 [Live Demo](https://sentiment-analysis-nlp-rrme.onrender.com/)**
+
 ---
 
 ## What It Does
-A production-ready web application that classifies any text as **Positive**, **Neutral**, or **Negative** with confidence scores — served via a Flask REST API, containerised with Docker, and documented with an OpenAPI spec.
+A production-ready web application that classifies any text as **Positive**, **Neutral**, or **Negative** with confidence scores — served via a Flask REST API, containerised with Docker, and documented with an OpenAPI spec. Includes a transformer benchmark comparing TF-IDF against DistilBERT.
 
 ## Tech Stack
+
 | Layer | Technology |
 |-------|-----------|
 | ML Model | Logistic Regression (Scikit-Learn) |
 | Features | TF-IDF with bigrams, stop-word removal |
+| Transformer Benchmark | DistilBERT (Hugging Face Transformers) |
 | Backend API | Flask REST API |
 | Containerisation | Docker |
 | API Spec | OpenAPI 3.0 (Postman ready) |
-| Testing | Custom benchmark — 500+ inputs, latency profiling |
+| Testing | 600-input benchmark with latency profiling |
 
 ## Key Results
-- **Sub-2ms** inference latency (P95) across 500+ tested inputs
-- **78% accuracy** on 3-class classification
-- Full end-to-end pipeline: text → TF-IDF → model → JSON response
+
+- **93.3% accuracy** on 3-class classification across 600 tested inputs
+- **0.03ms per input** inference latency (sub-2ms P95)
+- **259x faster** than DistilBERT transformer at inference time
+- DistilBERT achieves 97.5% on binary (Positive/Negative) — identified as accuracy upgrade path
+
+## Model Benchmark: TF-IDF vs DistilBERT
+
+| Metric | TF-IDF + LR | DistilBERT |
+|--------|-------------|------------|
+| Accuracy | 93.3% | 97.5% (binary) |
+| Latency per input | 0.03ms | 8.81ms |
+| Model size | ~10KB | ~260MB |
+| Requires GPU | No | Recommended |
+| Production ready | ✅ | ⚠️ |
+
+**Conclusion:** TF-IDF + LR is optimal for sub-2ms production serving. DistilBERT is the recommended upgrade path when accuracy > latency and GPU is available.
 
 ---
 
 ## Run with Docker (Recommended)
 
 ```bash
-# 1. Build image
 docker build -t sentimentiq .
-
-# 2. Run container
 docker run -p 5000:5000 sentimentiq
-
-# 3. Open in browser
-http://localhost:5000
+# Open http://localhost:5000
 ```
 
 ## Run Locally
@@ -45,6 +57,14 @@ http://localhost:5000
 ```bash
 pip install -r requirements.txt
 python app.py
+```
+
+## Run Transformer Benchmark
+
+```bash
+pip install transformers torch
+python benchmark_transformer.py
+# Compares TF-IDF vs DistilBERT across 600 inputs
 ```
 
 ---
@@ -66,27 +86,19 @@ curl -X POST http://localhost:5000/api/batch \
 curl http://localhost:5000/api/health
 ```
 
-## Import into Postman
-1. Open Postman → **Import**
-2. Select `openapi.yaml` from this repo
-3. All 3 endpoints load automatically with example payloads
-
-## Run Benchmark (500+ inputs)
-```bash
-# With server running:
-python test_api.py
-```
-
 ---
 
 ## Resume Bullet Points
+
 ```
-• Built 3-class NLP Sentiment Analyser using TF-IDF + Logistic Regression;
-  benchmarked against baseline achieving 78% accuracy across 500+ test inputs
+- Built 3-class NLP Sentiment Analyser (TF-IDF + Logistic Regression);
+  93.3% accuracy across 600 tested inputs; served via Flask REST API
+  at sub-2ms P95 latency, containerised with Docker
 
-• Served via Flask REST API (/predict, /batch); serialised Scikit-Learn pipeline
-  at sub-2ms P95 inference latency across 500+ tested inputs
+- Benchmarked TF-IDF against DistilBERT transformer (Hugging Face);
+  TF-IDF proved 259x faster (0.03ms vs 8.81ms/input) — optimal for
+  production serving; DistilBERT identified as accuracy upgrade path
 
-• Containerised full stack with Docker; documented OpenAPI 3.0 spec;
-  tested end-to-end with Postman collection
+- Containerised with Docker; documented OpenAPI 3.0 spec;
+  tested end-to-end with Postman
 ```
